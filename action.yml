@@ -54,6 +54,12 @@ inputs:
     description: 번들 ID. 비우면 Info.plist에서 읽는다.
     required: false
     default: ''
+  entitlements:
+    description: >-
+      .entitlements 경로. 주면 설치 전에 ad-hoc 서명으로 심는다. 무서명 빌드는 entitlements가 비어
+      CloudKit(CKContainer) 같은 프레임워크가 초기화에서 트랩한다.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -70,6 +76,7 @@ runs:
         WAIT: ${{ inputs.wait }}
         OUT: ${{ inputs.output-dir }}
         BUNDLE_ID: ${{ inputs.bundle-id }}
+        ENTITLEMENTS: ${{ inputs.entitlements }}
         FAIL_ON_CRASH: ${{ inputs.fail-on-crash }}
         SHUTDOWN: 'false'
       run: bash "${GITHUB_ACTION_PATH}/scripts/shoot.sh"

@@ -13,6 +13,9 @@
 #   WAIT           선택. 실행 후 촬영까지 대기 초 (기본 5)
 #   OUT            선택. 출력 폴더 (기본 screenshots)
 #   BUNDLE_ID      선택. 비우면 Info.plist에서 읽는다.
+#   ENTITLEMENTS   선택. .entitlements 경로. 주면 설치 전에 ad-hoc 서명으로 심는다.
+#                  무서명 빌드(CODE_SIGNING_ALLOWED=NO)는 entitlements가 비어 있어 CloudKit 같은
+#                  프레임워크가 초기화에서 트랩한다(실측: CKContainer(identifier:) EXC_BREAKPOINT).
 #   FAIL_ON_CRASH  선택. 촬영 시점에 앱이 죽어 있으면 마지막에 실패 종료 (기본 true)
 #   SHUTDOWN       선택. 끝나고 시뮬레이터 종료 (기본 false. 로컬 디버깅 편의)
 set -euo pipefail
@@ -26,6 +29,7 @@ RUNTIME="${RUNTIME:-}"
 WAIT="${WAIT:-5}"
 OUT="${OUT:-screenshots}"
 BUNDLE_ID="${BUNDLE_ID:-}"
+ENTITLEMENTS="${ENTITLEMENTS:-}"
 FAIL_ON_CRASH="${FAIL_ON_CRASH:-true}"
 SHUTDOWN="${SHUTDOWN:-false}"
 
@@ -92,6 +96,18 @@ log "부팅 완료"
 xcrun simctl status_bar "$UDID" override \
   --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 \
   >/dev/null 2>&1 || log "상태바 고정 실패 (계속)"
+
+# ── entitlements 심기 (ad-hoc 서명). 안쪽부터: 중첩 번들을 먼저 서명해야 앱 서명이 그 위를 봉인한다.
+if [ -n "$ENTITLEMENTS" ]; then
+  [ -f "$ENTITLEMENTS" ] || die "entitlements 파일 없음: $ENTITLEMENTS"
+  find "$APP" -depth -mindepth 1 \( -name "*.appex" -o -name "*.framework" \) -type d | while IFS= read -r nested; do
+    codesign --force --sign - "$nested" </dev/null
+    log "서명(중첩): ${nested#"$APP"/}"
+  done
+  codesign --force --sign - --entitlements "$ENTITLEMENTS" "$APP" </dev/null
+  log "서명(앱) entitlements=$ENTITLEMENTS"
+  codesign -d --entitlements - "$APP" 2>&1 | head -40 || true
+fi
 
 xcrun simctl install "$UDID" "$APP"
 log "설치 완료"
@@ -177,7 +193,7 @@ if [ "$crashed" -gt 0 ]; then
     -exec cp {} "$OUT/crash/" \; 2>/dev/null || true
   {
     echo
-    echo "죽은 실행 $crashed건. 크래시 리포트: \`crash/\`"
+    echo "죽은 실행 ${crashed}건. 크래시 리포트: \`crash/\`"
   } >> "$SUMMARY"
 fi
 rm -f "$STAMP"
@@ -190,7 +206,8 @@ if [ "$SHUTDOWN" = true ]; then
   xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
 fi
 
-log "촬영 $shots컷, 죽음 $crashed건, 출력 $OUT/"
+# 변수 뒤에 한글이 바로 붙으면 macOS bash가 다음 바이트까지 변수명으로 읽는다(실측: "crashed�: unbound variable"). 항상 ${}로 감싼다.
+log "촬영 ${shots}컷, 죽음 ${crashed}건, 출력 $OUT/"
 if [ "$crashed" -gt 0 ] && [ "$FAIL_ON_CRASH" = true ]; then
-  die "촬영 중 앱이 죽은 컷이 있다 ($crashed건). FAIL_ON_CRASH=false면 무시한다"
+  die "촬영 중 앱이 죽은 컷이 있다 (${crashed}건). FAIL_ON_CRASH=false면 무시한다"
 fi

@@ -59,6 +59,7 @@ UI 테스트 타깃을 안 만든다. Windows에서 iOS 앱을 만드는 사람�
 | `upload` | `true` | 아티팩트 업로드 여부 |
 | `fail-on-crash` | `true` | 촬영 시점에 앱이 죽어 있던 컷이 있으면 스텝 실패 |
 | `bundle-id` | `''` | 비우면 `Info.plist`의 `CFBundleIdentifier` |
+| `entitlements` | `''` | `.entitlements` 경로. 주면 설치 전에 ad-hoc 서명으로 심는다. CloudKit·App Group 쓰는 앱은 필수 |
 
 ## 로컬 Mac에서
 
@@ -74,8 +75,12 @@ scripts/shoot.sh
 
 ## 함정
 
+- **무서명 빌드(`CODE_SIGNING_ALLOWED=NO`)는 entitlements가 빈 채로 나온다.** CloudKit을 쓰는 앱은 `CKContainer(identifier:)`가
+  초기화에서 `EXC_BREAKPOINT`로 죽는다(실측). `entitlements` 입력에 `.entitlements` 파일을 주면 설치 전에 ad-hoc 서명으로 심는다.
+  iCloud 계정이 없어도 컨테이너 초기화는 통과하고 동기화만 실패 로그를 낸다.
 - 기기 이름을 하드코딩하지 않는다. 러너 이미지가 바뀌면 `device not found`로 깨진다(actions/runner-images #10960). 런타임 목록에서 고른다.
 - 첫 실행에 권한 시트(알림·HealthKit 등)가 뜨면 그대로 찍힌다. 시트 자체도 정보다. 알림·위치·사진 등은 `xcrun simctl privacy` 로 미리 줄 수 있지만 HealthKit은 안 된다.
-- iCloud 계정 없는 시뮬레이터라 CloudKit 동기화는 실패 로그를 낸다. 그걸로 앱이 죽으면 `summary.md`에 `죽음`으로 남고 `crash/`에 리포트가 들어간다.
+- 촬영 시점에 앱이 죽어 있으면 `summary.md`에 `죽음`으로 남고 `crash/`에 `.ips` 리포트가 들어간다. 홈 화면이 찍혀 있으면 그 경우다.
+- 러너에서 시뮬레이터 첫 부팅은 5분까지 걸렸다(실측, iOS 26.5). 컷 자체는 10초 안팎.
 - 상태바 고정(`status_bar override`)이 기기·런타임에 따라 안 먹을 수 있다. 실패해도 촬영은 계속한다.
 - 아티팩트 이미지는 PR 코멘트에 인라인이 안 된다. zip을 내려받아 본다.
