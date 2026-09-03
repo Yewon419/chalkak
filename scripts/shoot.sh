@@ -97,16 +97,21 @@ xcrun simctl status_bar "$UDID" override \
   --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 \
   >/dev/null 2>&1 || log "상태바 고정 실패 (계속)"
 
-# ── entitlements 심기 (ad-hoc 서명). 안쪽부터: 중첩 번들을 먼저 서명해야 앱 서명이 그 위를 봉인한다.
+# ── entitlements 심기 (ad-hoc 서명). 안쪽부터: 중첩 코드를 먼저 서명해야 앱 서명이 그 위를 봉인한다.
+#    dylib까지 포함해야 한다. Xcode 16+ 디버그 빌드는 실행부가 <앱>.debug.dylib에 있는데, 이걸
+#    빼고 앱만 서명하면 봉인이 안 맞아 SpringBoard가 실행을 거부한다
+#    (실측: "denied by service delegate (SBMainWorkspace)"). 무서명일 땐 검사 자체를 안 해서 떴다.
 if [ -n "$ENTITLEMENTS" ]; then
   [ -f "$ENTITLEMENTS" ] || die "entitlements 파일 없음: $ENTITLEMENTS"
-  find "$APP" -depth -mindepth 1 \( -name "*.appex" -o -name "*.framework" \) -type d | while IFS= read -r nested; do
+  find "$APP" -depth -mindepth 1 \( -name "*.appex" -o -name "*.framework" -o -name "*.dylib" \) \
+    | while IFS= read -r nested; do
     codesign --force --sign - "$nested" </dev/null
     log "서명(중첩): ${nested#"$APP"/}"
   done
   codesign --force --sign - --entitlements "$ENTITLEMENTS" "$APP" </dev/null
   log "서명(앱) entitlements=$ENTITLEMENTS"
   codesign -d --entitlements - "$APP" 2>&1 | head -40 || true
+  codesign --verify --deep --strict --verbose=2 "$APP" 2>&1 || log "서명 검증 실패 (계속. 실행이 거부되면 이게 원인)"
 fi
 
 xcrun simctl install "$UDID" "$APP"
@@ -164,14 +169,19 @@ for mode in "${MODES[@]}"; do
 
     # 루프 안 명령엔 </dev/null : 화면 목록을 읽는 stdin(heredoc)을 삼키지 않게
     xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 </dev/null || true
+    # 실행 거부는 스크립트를 멈추지 않는다. 컷은 찍고(홈 화면이 남는다) 상태만 남긴다.
+    launched=true
     # shellcheck disable=SC2086  # 런치 인자는 의도적으로 단어 분리한다
-    xcrun simctl launch "$UDID" "$BUNDLE_ID" $args >/dev/null </dev/null
+    xcrun simctl launch "$UDID" "$BUNDLE_ID" $args >/dev/null </dev/null || launched=false
     sleep "$WAIT"
     file="$OUT/${name}-${mode}.png"
     xcrun simctl io "$UDID" screenshot "$file" >/dev/null </dev/null
     shots=$((shots + 1))
 
-    if pgrep -f "/${EXEC_NAME}.app/${EXEC_NAME}" >/dev/null; then
+    if [ "$launched" != true ]; then
+      status="실행 실패"
+      crashed=$((crashed + 1))
+    elif pgrep -f "/${EXEC_NAME}.app/${EXEC_NAME}" >/dev/null; then
       status="살아있음"
     else
       status="죽음"

@@ -78,6 +78,8 @@ scripts/shoot.sh
 - **무서명 빌드(`CODE_SIGNING_ALLOWED=NO`)는 entitlements가 빈 채로 나온다.** CloudKit을 쓰는 앱은 `CKContainer(identifier:)`가
   초기화에서 `EXC_BREAKPOINT`로 죽는다(실측). `entitlements` 입력에 `.entitlements` 파일을 주면 설치 전에 ad-hoc 서명으로 심는다.
   iCloud 계정이 없어도 컨테이너 초기화는 통과하고 동기화만 실패 로그를 낸다.
+- 서명은 안쪽부터, dylib까지. Xcode 16+ 디버그 빌드는 실행부가 `<앱>.debug.dylib`에 있어서 앱 번들만 서명하면 봉인이 안 맞고
+  SpringBoard가 실행을 거부한다(`denied by service delegate (SBMainWorkspace)`). 찰칵은 appex·framework·dylib을 먼저 서명한다.
 - 기기 이름을 하드코딩하지 않는다. 러너 이미지가 바뀌면 `device not found`로 깨진다(actions/runner-images #10960). 런타임 목록에서 고른다.
 - 첫 실행에 권한 시트(알림·HealthKit 등)가 뜨면 그대로 찍힌다. 시트 자체도 정보다. 알림·위치·사진 등은 `xcrun simctl privacy` 로 미리 줄 수 있지만 HealthKit은 안 된다.
 - 촬영 시점에 앱이 죽어 있으면 `summary.md`에 `죽음`으로 남고 `crash/`에 `.ips` 리포트가 들어간다. 홈 화면이 찍혀 있으면 그 경우다.
