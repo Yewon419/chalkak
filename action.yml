@@ -1,0 +1,82 @@
+name: 찰칵
+description: >-
+  빌드된 iOS 시뮬레이터 .app을 화면별 런치 인자로 실행해 스크린샷을 찍고 아티팩트로 올린다.
+  UI 테스트 타깃 없이 동작한다. macOS 러너 전용.
+author: Yewon419
+branding:
+  icon: camera
+  color: orange
+
+inputs:
+  app:
+    description: 시뮬레이터용 .app 경로 (예 build/dd/Build/Products/Debug-iphonesimulator/MyApp.app)
+    required: true
+  screens:
+    description: '한 줄에 한 화면. "<이름> | <런치 인자>". 인자는 비워도 된다. # 줄은 주석.'
+    required: true
+  defaults:
+    description: '첫 실행 전 주입할 UserDefaults. 한 줄에 하나: "<키> -bool true" (defaults write 인자 형식)'
+    required: false
+    default: ''
+  appearance:
+    description: light | dark | light,dark
+    required: false
+    default: light
+  device:
+    description: 기기 이름 부분 문자열 (예 "iPhone 17 Pro"). 비우면 최신 iOS 런타임의 첫 iPhone.
+    required: false
+    default: ''
+  runtime:
+    description: 런타임 필터 (예 "iOS 26"). 비우면 최신.
+    required: false
+    default: ''
+  wait:
+    description: 실행 후 촬영까지 대기 초
+    required: false
+    default: '5'
+  output-dir:
+    description: 스크린샷 출력 폴더
+    required: false
+    default: screenshots
+  artifact-name:
+    description: 업로드 아티팩트 이름
+    required: false
+    default: screenshots
+  upload:
+    description: 아티팩트 업로드 여부
+    required: false
+    default: 'true'
+  fail-on-crash:
+    description: 촬영 시점에 앱이 죽어 있던 컷이 있으면 스텝 실패
+    required: false
+    default: 'true'
+  bundle-id:
+    description: 번들 ID. 비우면 Info.plist에서 읽는다.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: 찰칵 촬영
+      shell: bash
+      env:
+        APP: ${{ inputs.app }}
+        SCREENS: ${{ inputs.screens }}
+        DEFAULTS: ${{ inputs.defaults }}
+        APPEARANCE: ${{ inputs.appearance }}
+        DEVICE: ${{ inputs.device }}
+        RUNTIME: ${{ inputs.runtime }}
+        WAIT: ${{ inputs.wait }}
+        OUT: ${{ inputs.output-dir }}
+        BUNDLE_ID: ${{ inputs.bundle-id }}
+        FAIL_ON_CRASH: ${{ inputs.fail-on-crash }}
+        SHUTDOWN: 'false'
+      run: bash "${GITHUB_ACTION_PATH}/scripts/shoot.sh"
+    - name: 찰칵 아티팩트 업로드
+      if: ${{ always() && inputs.upload == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.output-dir }}
+        if-no-files-found: warn

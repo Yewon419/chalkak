@@ -1,0 +1,19 @@
+# 정적 검사만. 실제 촬영은 macOS 러너 + 소비자 앱이 있어야 해서 소비 리포의 CI가 통합 테스트다.
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash -n
+        run: bash -n scripts/shoot.sh
+      - name: shellcheck
+        run: shellcheck -s bash scripts/shoot.sh
+      - name: action.yml 파싱
+        run: python3 -c "import yaml,sys; d=yaml.safe_load(open('action.yml')); assert d['runs']['using']=='composite', d['runs']; print('inputs:', ', '.join(d['inputs']))"
