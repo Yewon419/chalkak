@@ -1,0 +1,2 @@
+# macOS 러너에서 실행되는 셸·yml은 LF 고정 (Windows autocrlf가 CRLF로 바꾸면 shebang이 깨진다)
+* text=auto eol=lf
