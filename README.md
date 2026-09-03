@@ -59,7 +59,6 @@ UI 테스트 타깃을 안 만든다. Windows에서 iOS 앱을 만드는 사람�
 | `upload` | `true` | 아티팩트 업로드 여부 |
 | `fail-on-crash` | `true` | 촬영 시점에 앱이 죽어 있던 컷이 있으면 스텝 실패 |
 | `bundle-id` | `''` | 비우면 `Info.plist`의 `CFBundleIdentifier` |
-| `entitlements` | `''` | `.entitlements` 경로. 주면 설치 전에 ad-hoc 서명으로 심는다. CloudKit·App Group 쓰는 앱은 필수 |
 
 ## 로컬 Mac에서
 
@@ -75,11 +74,18 @@ scripts/shoot.sh
 
 ## 함정
 
-- **무서명 빌드(`CODE_SIGNING_ALLOWED=NO`)는 entitlements가 빈 채로 나온다.** CloudKit을 쓰는 앱은 `CKContainer(identifier:)`가
-  초기화에서 `EXC_BREAKPOINT`로 죽는다(실측). `entitlements` 입력에 `.entitlements` 파일을 주면 설치 전에 ad-hoc 서명으로 심는다.
+- **entitlements는 빌드 단계에서.** 시뮬레이터용 entitlements는 codesign이 아니라 링크 시점에 바이너리의
+  `__TEXT,__entitlements` 섹션으로 들어간다. `CODE_SIGNING_ALLOWED=NO`로 빌드하면 이 섹션이 없어서 CloudKit을 쓰는 앱은
+  `CKContainer(identifier:)`가 `EXC_BREAKPOINT`로 죽는다(실측). 처방은 시뮬레이터 빌드에 서명을 켜는 것:
+
+  ```sh
+  xcodebuild build ... -destination 'generic/platform=iOS Simulator' \
+    CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO     # ad-hoc. 인증서·프로파일 불필요
+  ```
+
+  빌드 뒤에 `codesign --entitlements`로 심는 건 안 된다. 호스트 macOS의 taskgated가 제한 entitlement를 가진 ad-hoc 프로세스를
+  죽인다(실측: `SIGKILL (Code Signature Invalid)`, `Taskgated Invalid Signature`). 그래서 찰칵은 서명을 건드리지 않는다.
   iCloud 계정이 없어도 컨테이너 초기화는 통과하고 동기화만 실패 로그를 낸다.
-- 서명은 안쪽부터, dylib까지. Xcode 16+ 디버그 빌드는 실행부가 `<앱>.debug.dylib`에 있어서 앱 번들만 서명하면 봉인이 안 맞고
-  SpringBoard가 실행을 거부한다(`denied by service delegate (SBMainWorkspace)`). 찰칵은 appex·framework·dylib을 먼저 서명한다.
 - 기기 이름을 하드코딩하지 않는다. 러너 이미지가 바뀌면 `device not found`로 깨진다(actions/runner-images #10960). 런타임 목록에서 고른다.
 - 첫 실행에 권한 시트(알림·HealthKit 등)가 뜨면 그대로 찍힌다. 시트 자체도 정보다. 알림·위치·사진 등은 `xcrun simctl privacy` 로 미리 줄 수 있지만 HealthKit은 안 된다.
 - 촬영 시점에 앱이 죽어 있으면 `summary.md`에 `죽음`으로 남고 `crash/`에 `.ips` 리포트가 들어간다. 홈 화면이 찍혀 있으면 그 경우다.

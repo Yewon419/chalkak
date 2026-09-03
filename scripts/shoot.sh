@@ -13,9 +13,6 @@
 #   WAIT           선택. 실행 후 촬영까지 대기 초 (기본 5)
 #   OUT            선택. 출력 폴더 (기본 screenshots)
 #   BUNDLE_ID      선택. 비우면 Info.plist에서 읽는다.
-#   ENTITLEMENTS   선택. .entitlements 경로. 주면 설치 전에 ad-hoc 서명으로 심는다.
-#                  무서명 빌드(CODE_SIGNING_ALLOWED=NO)는 entitlements가 비어 있어 CloudKit 같은
-#                  프레임워크가 초기화에서 트랩한다(실측: CKContainer(identifier:) EXC_BREAKPOINT).
 #   FAIL_ON_CRASH  선택. 촬영 시점에 앱이 죽어 있으면 마지막에 실패 종료 (기본 true)
 #   SHUTDOWN       선택. 끝나고 시뮬레이터 종료 (기본 false. 로컬 디버깅 편의)
 set -euo pipefail
@@ -29,7 +26,6 @@ RUNTIME="${RUNTIME:-}"
 WAIT="${WAIT:-5}"
 OUT="${OUT:-screenshots}"
 BUNDLE_ID="${BUNDLE_ID:-}"
-ENTITLEMENTS="${ENTITLEMENTS:-}"
 FAIL_ON_CRASH="${FAIL_ON_CRASH:-true}"
 SHUTDOWN="${SHUTDOWN:-false}"
 
@@ -97,23 +93,11 @@ xcrun simctl status_bar "$UDID" override \
   --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 \
   >/dev/null 2>&1 || log "상태바 고정 실패 (계속)"
 
-# ── entitlements 심기 (ad-hoc 서명). 안쪽부터: 중첩 코드를 먼저 서명해야 앱 서명이 그 위를 봉인한다.
-#    dylib까지 포함해야 한다. Xcode 16+ 디버그 빌드는 실행부가 <앱>.debug.dylib에 있는데, 이걸
-#    빼고 앱만 서명하면 봉인이 안 맞아 SpringBoard가 실행을 거부한다
-#    (실측: "denied by service delegate (SBMainWorkspace)"). 무서명일 땐 검사 자체를 안 해서 떴다.
-if [ -n "$ENTITLEMENTS" ]; then
-  [ -f "$ENTITLEMENTS" ] || die "entitlements 파일 없음: $ENTITLEMENTS"
-  find "$APP" -depth -mindepth 1 \( -name "*.appex" -o -name "*.framework" -o -name "*.dylib" \) \
-    | while IFS= read -r nested; do
-    codesign --force --sign - "$nested" </dev/null
-    log "서명(중첩): ${nested#"$APP"/}"
-  done
-  codesign --force --sign - --entitlements "$ENTITLEMENTS" "$APP" </dev/null
-  log "서명(앱) entitlements=$ENTITLEMENTS"
-  codesign -d --entitlements - "$APP" 2>&1 | head -40 || true
-  codesign --verify --deep --strict --verbose=2 "$APP" 2>&1 || log "서명 검증 실패 (계속. 실행이 거부되면 이게 원인)"
-fi
-
+# ── 서명은 건드리지 않는다. 시뮬레이터 entitlements는 codesign이 아니라 링크 시점에 바이너리의
+#    __TEXT,__entitlements 섹션으로 들어간다. 여기서 codesign --entitlements로 심으면 호스트 macOS의
+#    taskgated가 "제한 entitlement를 가진 ad-hoc 프로세스"로 보고 죽인다
+#    (실측: SIGKILL "Code Signature Invalid", termination "Taskgated Invalid Signature").
+#    entitlements가 필요한 앱(CloudKit·App Group)은 빌드 단계에서 서명을 켜야 한다. README 참조.
 xcrun simctl install "$UDID" "$APP"
 log "설치 완료"
 
