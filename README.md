@@ -33,6 +33,15 @@ UI 테스트 타깃을 안 만든다. Windows에서 iOS 앱을 만드는 사람�
 결과: `screenshots` 아티팩트에 `<이름>-<외관>.png` + `summary.md` + **`index.html`(갤러리)**. 잡 요약(Step Summary)에도 표가 붙는다.
 zip을 풀고 `index.html`을 열면 폰 비율 격자로 보이고, 컷을 누르면 원본 크기.
 
+### 단일 파일로 만들기
+
+이미지를 data URI로 품은 HTML 한 장이 필요하면(Claude Artifact 등 단일 파일 호스팅):
+
+```sh
+gh run download <run-id> -n screenshots -D shots
+python3 scripts/inline_gallery.py shots gallery.html
+```
+
 ### 브라우저에서 바로 보기 (GitHub Pages)
 
 아티팩트는 내려받아야 열린다. push마다 링크 하나로 보려면 출력 폴더를 `gh-pages`에 올린다. 리포가 public이면 무료.
