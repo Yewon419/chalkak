@@ -1,7 +1,7 @@
-name: 찰칵
+name: Chalkak
 description: >-
-  빌드된 iOS 시뮬레이터 .app을 화면별 런치 인자로 실행해 스크린샷을 찍고 아티팩트로 올린다.
-  UI 테스트 타깃 없이 동작한다. macOS 러너 전용.
+  Screenshot a built iOS simulator .app screen by screen using launch arguments, and upload the shots
+  with a browsable gallery. No UI test target, no app source changes. macOS runners only.
 author: Yewon419
 branding:
   icon: camera
@@ -9,13 +9,13 @@ branding:
 
 inputs:
   app:
-    description: 시뮬레이터용 .app 경로 (예 build/dd/Build/Products/Debug-iphonesimulator/MyApp.app)
+    description: Path to the simulator .app (e.g. build/dd/Build/Products/Debug-iphonesimulator/MyApp.app)
     required: true
   screens:
-    description: '한 줄에 한 화면. "<이름> | <런치 인자>". 인자는 비워도 된다. # 줄은 주석.'
+    description: 'One screen per line: "<name> | <launch arguments>". Arguments may be omitted. Lines starting with # are comments.'
     required: true
   defaults:
-    description: '첫 실행 전 주입할 UserDefaults. 한 줄에 하나: "<키> -bool true" (defaults write 인자 형식)'
+    description: 'UserDefaults to inject before first launch, one per line: "<key> -bool true" (defaults write argument form)'
     required: false
     default: ''
   appearance:
@@ -23,52 +23,53 @@ inputs:
     required: false
     default: light
   device:
-    description: 기기 이름 부분 문자열 (예 "iPhone 17 Pro"). 비우면 최신 iOS 런타임의 첫 iPhone.
+    description: Substring of a device name (e.g. "iPhone 17 Pro"). Empty picks the first iPhone on the newest iOS runtime.
     required: false
     default: ''
   runtime:
-    description: 런타임 필터 (예 "iOS 26"). 비우면 최신.
+    description: Runtime filter (e.g. "iOS 26"). Empty picks the newest.
     required: false
     default: ''
   wait:
-    description: 실행 후 촬영까지 대기 초
+    description: Seconds to wait between launch and capture
     required: false
     default: '5'
   output-dir:
-    description: 스크린샷 출력 폴더
+    description: Directory the screenshots are written to
     required: false
     default: screenshots
   artifact-name:
-    description: 업로드 아티팩트 이름
+    description: Name of the uploaded artifact
     required: false
     default: screenshots
   upload:
-    description: 아티팩트 업로드 여부
+    description: Whether to upload the artifact
     required: false
     default: 'true'
   fail-on-crash:
-    description: 촬영 시점에 앱이 죽어 있던 컷이 있으면 스텝 실패
+    description: Fail the step if the app was not running at capture time
     required: false
     default: 'true'
   bundle-id:
-    description: 번들 ID. 비우면 Info.plist에서 읽는다.
+    description: Bundle identifier. Empty reads CFBundleIdentifier from Info.plist.
     required: false
     default: ''
   title:
-    description: 갤러리(index.html) 제목. 비우면 "<실행파일명> 찰칵".
+    description: Gallery (index.html) title. Empty uses "<executable> 찰칵".
     required: false
     default: ''
   privacy:
     description: >-
-      설치 후 미리 허용할 권한(쉼표 구분, simctl privacy 서비스명: location, photos, contacts, calendar,
-      reminders, microphone, motion, media-library, siri, all). 시스템 권한 시트가 한 번 뜨면 이후 컷을 전부 가린다.
+      Permissions to pre-grant after install (comma separated, simctl privacy service names: location, photos,
+      contacts, calendar, reminders, microphone, motion, media-library, siri, all). A system permission alert stays
+      on screen across relaunches and covers every later shot.
     required: false
     default: ''
 
 runs:
   using: composite
   steps:
-    - name: 찰칵 촬영
+    - name: Chalkak capture
       shell: bash
       env:
         APP: ${{ inputs.app }}
@@ -85,7 +86,7 @@ runs:
         FAIL_ON_CRASH: ${{ inputs.fail-on-crash }}
         SHUTDOWN: 'false'
       run: bash "${GITHUB_ACTION_PATH}/scripts/shoot.sh"
-    - name: 찰칵 아티팩트 업로드
+    - name: Chalkak artifact upload
       if: ${{ always() && inputs.upload == 'true' }}
       uses: actions/upload-artifact@v4
       with:
