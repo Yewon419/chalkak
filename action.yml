@@ -58,6 +58,12 @@ inputs:
     description: 갤러리(index.html) 제목. 비우면 "<실행파일명> 찰칵".
     required: false
     default: ''
+  privacy:
+    description: >-
+      설치 후 미리 허용할 권한(쉼표 구분, simctl privacy 서비스명: location, photos, contacts, calendar,
+      reminders, microphone, motion, media-library, siri, all). 시스템 권한 시트가 한 번 뜨면 이후 컷을 전부 가린다.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -75,6 +81,7 @@ runs:
         OUT: ${{ inputs.output-dir }}
         BUNDLE_ID: ${{ inputs.bundle-id }}
         TITLE: ${{ inputs.title }}
+        PRIVACY: ${{ inputs.privacy }}
         FAIL_ON_CRASH: ${{ inputs.fail-on-crash }}
         SHUTDOWN: 'false'
       run: bash "${GITHUB_ACTION_PATH}/scripts/shoot.sh"

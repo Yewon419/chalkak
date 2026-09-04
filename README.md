@@ -89,6 +89,7 @@ python3 scripts/inline_gallery.py shots gallery.html
 | `fail-on-crash` | `true` | 촬영 시점에 앱이 죽어 있던 컷이 있으면 스텝 실패 |
 | `bundle-id` | `''` | 비우면 `Info.plist`의 `CFBundleIdentifier` |
 | `title` | `''` | 갤러리 제목. 비우면 `<실행파일명> 찰칵` |
+| `privacy` | `''` | 설치 후 미리 허용할 권한. 쉼표 구분, `simctl privacy` 서비스명(`location`, `photos`, `all` 등) |
 
 ## 로컬 Mac에서
 
@@ -117,7 +118,8 @@ scripts/shoot.sh
   죽인다(실측: `SIGKILL (Code Signature Invalid)`, `Taskgated Invalid Signature`). 그래서 찰칵은 서명을 건드리지 않는다.
   iCloud 계정이 없어도 컨테이너 초기화는 통과하고 동기화만 실패 로그를 낸다.
 - 기기 이름을 하드코딩하지 않는다. 러너 이미지가 바뀌면 `device not found`로 깨진다(actions/runner-images #10960). 런타임 목록에서 고른다.
-- 첫 실행에 권한 시트(알림·HealthKit 등)가 뜨면 그대로 찍힌다. 시트 자체도 정보다. 알림·위치·사진 등은 `xcrun simctl privacy` 로 미리 줄 수 있지만 HealthKit은 안 된다.
+- **시스템 권한 시트는 한 번 뜨면 앱을 다시 실행해도 남아서 이후 모든 컷을 가린다**(실측: 위치 시트 하나가 44컷 중 22컷을 덮었다).
+  위치·사진·연락처 등은 `privacy` 입력으로 미리 허용한다. 알림·HealthKit은 `simctl privacy`에 없어 못 준다. 시트가 뜨는 화면은 목록 마지막에 두는 것도 방법.
 - 촬영 시점에 앱이 죽어 있으면 `summary.md`에 `죽음`으로 남고 `crash/`에 `.ips` 리포트가 들어간다. 홈 화면이 찍혀 있으면 그 경우다.
 - 러너에서 시뮬레이터 첫 부팅은 5분까지 걸렸다(실측, iOS 26.5). 컷 자체는 10초 안팎.
 - 상태바 고정(`status_bar override`)이 기기·런타임에 따라 안 먹을 수 있다. 실패해도 촬영은 계속한다.

@@ -14,6 +14,8 @@
 #   OUT            선택. 출력 폴더 (기본 screenshots)
 #   BUNDLE_ID      선택. 비우면 Info.plist에서 읽는다.
 #   TITLE          선택. 갤러리(index.html) 제목 (기본 "<실행파일명> 찰칵")
+#   PRIVACY        선택. 설치 후 미리 허용할 권한, 쉼표 구분 (simctl privacy 서비스명: location, photos,
+#                  contacts, calendar, reminders, microphone, motion, media-library, siri, all)
 #   FAIL_ON_CRASH  선택. 촬영 시점에 앱이 죽어 있으면 마지막에 실패 종료 (기본 true)
 #   SHUTDOWN       선택. 끝나고 시뮬레이터 종료 (기본 false. 로컬 디버깅 편의)
 set -euo pipefail
@@ -27,6 +29,7 @@ RUNTIME="${RUNTIME:-}"
 WAIT="${WAIT:-5}"
 OUT="${OUT:-screenshots}"
 BUNDLE_ID="${BUNDLE_ID:-}"
+PRIVACY="${PRIVACY:-}"
 FAIL_ON_CRASH="${FAIL_ON_CRASH:-true}"
 SHUTDOWN="${SHUTDOWN:-false}"
 
@@ -101,6 +104,18 @@ xcrun simctl status_bar "$UDID" override \
 #    entitlements가 필요한 앱(CloudKit·App Group)은 빌드 단계에서 서명을 켜야 한다. README 참조.
 xcrun simctl install "$UDID" "$APP"
 log "설치 완료"
+
+# ── 권한 사전 허용. 시스템 권한 시트는 한 번 뜨면 앱을 다시 실행해도 그대로 남아 이후 모든 컷을 가린다
+#    (실측: 날씨 테마 진입 컷에서 위치 시트가 떠 남은 22컷 전부 가려짐). simctl privacy 서비스명 그대로.
+if [ -n "$PRIVACY" ]; then
+  IFS=',' read -r -a SERVICES <<< "$PRIVACY"
+  for svc in "${SERVICES[@]}"; do
+    svc=$(trim "$svc")
+    [ -n "$svc" ] || continue
+    xcrun simctl privacy "$UDID" grant "$svc" "$BUNDLE_ID" </dev/null
+    log "권한 허용: $svc"
+  done
+fi
 
 # ── defaults 사전 주입 (첫 실행 전에만 의미가 있다. 이미 실행된 앱은 cfprefsd 캐시가 이길 수 있다)
 if [ -n "$DEFAULTS" ]; then
