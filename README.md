@@ -30,7 +30,27 @@ UI 테스트 타깃을 안 만든다. Windows에서 iOS 앱을 만드는 사람�
     appearance: light,dark
 ```
 
-결과: `screenshots` 아티팩트에 `<이름>-<외관>.png` + `summary.md`. 잡 요약(Step Summary)에도 표가 붙는다.
+결과: `screenshots` 아티팩트에 `<이름>-<외관>.png` + `summary.md` + **`index.html`(갤러리)**. 잡 요약(Step Summary)에도 표가 붙는다.
+zip을 풀고 `index.html`을 열면 폰 비율 격자로 보이고, 컷을 누르면 원본 크기.
+
+### 브라우저에서 바로 보기 (GitHub Pages)
+
+아티팩트는 내려받아야 열린다. push마다 링크 하나로 보려면 출력 폴더를 `gh-pages`에 올린다. 리포가 public이면 무료.
+
+```yaml
+- uses: Yewon419/chalkak@main
+  with:
+    app: ...
+    screens: ...
+- uses: peaceiris/actions-gh-pages@v4
+  if: always()
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    publish_dir: screenshots
+```
+
+잡에 `permissions: contents: write`가 필요하고, 리포 Settings > Pages에서 소스를 `gh-pages` 브랜치로 한 번 지정한다.
+그 뒤엔 `https://<계정>.github.io/<리포>/`가 항상 마지막 런의 갤러리다. ⚠ Pages는 공개 URL이라 스크린샷이 누구에게나 보인다.
 
 ## 화면 이동 원리
 
@@ -59,6 +79,7 @@ UI 테스트 타깃을 안 만든다. Windows에서 iOS 앱을 만드는 사람�
 | `upload` | `true` | 아티팩트 업로드 여부 |
 | `fail-on-crash` | `true` | 촬영 시점에 앱이 죽어 있던 컷이 있으면 스텝 실패 |
 | `bundle-id` | `''` | 비우면 `Info.plist`의 `CFBundleIdentifier` |
+| `title` | `''` | 갤러리 제목. 비우면 `<실행파일명> 찰칵` |
 
 ## 로컬 Mac에서
 

@@ -1,0 +1,148 @@
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #F6F4EF;
+    --paper-2: #ECE9E2;
+    --ink: #1D1B18;
+    --ink-2: #5B5751;
+    --ink-3: #8E8981;
+    --line: #D9D5CC;
+    --accent: #C9432C;
+    --ok: #2F7A4E;
+    --ok-bg: #E3F1E8;
+    --bad: #B4322A;
+    --bad-bg: #F6E2DF;
+    --shadow: 0 10px 30px rgba(29, 27, 24, .14);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #17161A;
+      --paper-2: #1F1E23;
+      --ink: #EEEAE2;
+      --ink-2: #B4AEA3;
+      --ink-3: #7E786F;
+      --line: #33313A;
+      --accent: #E0705C;
+      --ok: #7CC69A;
+      --ok-bg: #1E3327;
+      --bad: #EE8C82;
+      --bad-bg: #3B2321;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #17161A;
+    --paper-2: #1F1E23;
+    --ink: #EEEAE2;
+    --ink-2: #B4AEA3;
+    --ink-3: #7E786F;
+    --line: #33313A;
+    --accent: #E0705C;
+    --ok: #7CC69A;
+    --ok-bg: #1E3327;
+    --bad: #EE8C82;
+    --bad-bg: #3B2321;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+  header {
+    padding: 28px clamp(16px, 4vw, 48px) 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 32px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+  .brand .shutter { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); display: inline-block; transform: translateY(-1px); }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 22px; color: var(--ink-2); font-size: 13px; }
+  .meta b { color: var(--ink); font-weight: 500; }
+  .meta a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  .meta a:hover, .meta a:focus-visible { border-bottom-color: var(--accent); outline: none; }
+  .tally { display: flex; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 500; letter-spacing: .01em; }
+  .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip.ok { color: var(--ok); background: var(--ok-bg); }
+  .chip.bad { color: var(--bad); background: var(--bad-bg); }
+  main { padding: 28px clamp(16px, 4vw, 48px) 56px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 28px 22px;
+  }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .frame {
+    display: block; width: 100%; padding: 0; border: 0; cursor: zoom-in;
+    aspect-ratio: 1206 / 2622;
+    border-radius: 22px; overflow: hidden;
+    background: var(--paper-2);
+    box-shadow: var(--shadow);
+    outline-offset: 4px;
+  }
+  .frame:focus-visible { outline: 2px solid var(--accent); }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+  figcaption .name { font-weight: 600; font-size: 14px; }
+  figcaption .mode { color: var(--ink-3); font-size: 12.5px; margin-left: 8px; }
+  .empty { color: var(--ink-3); padding: 48px 0; text-align: center; }
+  dialog {
+    border: 0; padding: 0; background: transparent; max-width: none; max-height: none;
+    width: 100vw; height: 100vh;
+  }
+  dialog::backdrop { background: rgba(10, 9, 8, .82); }
+  dialog form { margin: 0; width: 100%; height: 100%; display: grid; place-items: center; cursor: zoom-out; }
+  dialog img { max-height: 92vh; max-width: 92vw; border-radius: 28px; box-shadow: var(--shadow); }
+  dialog .cap { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); color: #EEEAE2; font-size: 13px; opacity: .85; }
+  footer { padding: 0 clamp(16px, 4vw, 48px) 40px; color: var(--ink-3); font-size: 12.5px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .frame { transition: transform .18s ease; }
+    .frame:hover { transform: translateY(-2px); }
+  }
+</style>
+
+<header>
+  <div>
+    <div class="brand"><span class="shutter" aria-hidden="true"></span><h1>__HEADING__</h1></div>
+    <div class="meta">
+      <span>앱 <b class="mono">__BUNDLE__</b></span>
+      <span>기기 <b>__DEVICE__</b></span>
+      <span>런 <a class="mono" href="__RUN_URL__">__RUN_LABEL__</a></span>
+      <span class="mono">__WHEN__</span>
+    </div>
+  </div>
+  <div class="tally">__TALLY__</div>
+</header>
+
+<main>
+  <div class="grid">
+__CARDS__
+  </div>
+</main>
+
+<footer>컷을 누르면 원본 크기. Esc 또는 바깥을 누르면 닫힘. 상태 「살아있음」은 촬영 시점에 앱 프로세스가 떠 있었다는 뜻, 「죽음」·「실행 실패」면 홈 화면이 찍혀 있다.</footer>
+
+<dialog id="zoom">
+  <form method="dialog"><img id="zoom-img" alt=""><span class="cap" id="zoom-cap"></span></form>
+</dialog>
+
+<script>
+  const dlg = document.getElementById('zoom');
+  const img = document.getElementById('zoom-img');
+  const cap = document.getElementById('zoom-cap');
+  document.querySelectorAll('.frame').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const src = btn.querySelector('img');
+      img.src = src.src; img.alt = src.alt; cap.textContent = btn.dataset.cap || src.alt;
+      dlg.showModal();
+    });
+  });
+</script>

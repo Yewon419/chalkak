@@ -54,6 +54,10 @@ inputs:
     description: 번들 ID. 비우면 Info.plist에서 읽는다.
     required: false
     default: ''
+  title:
+    description: 갤러리(index.html) 제목. 비우면 "<실행파일명> 찰칵".
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -70,6 +74,7 @@ runs:
         WAIT: ${{ inputs.wait }}
         OUT: ${{ inputs.output-dir }}
         BUNDLE_ID: ${{ inputs.bundle-id }}
+        TITLE: ${{ inputs.title }}
         FAIL_ON_CRASH: ${{ inputs.fail-on-crash }}
         SHUTDOWN: 'false'
       run: bash "${GITHUB_ACTION_PATH}/scripts/shoot.sh"

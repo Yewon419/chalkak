@@ -15,5 +15,11 @@ jobs:
         run: bash -n scripts/shoot.sh
       - name: shellcheck
         run: shellcheck -s bash scripts/shoot.sh
+      - name: ruff + mypy (gallery.py)
+        run: |
+          pip install --quiet ruff mypy
+          ruff check scripts/gallery.py
+          ruff format --check scripts/gallery.py
+          mypy --strict scripts/gallery.py
       - name: action.yml 파싱
         run: python3 -c "import yaml,sys; d=yaml.safe_load(open('action.yml')); assert d['runs']['using']=='composite', d['runs']; print('inputs:', ', '.join(d['inputs']))"

@@ -13,6 +13,7 @@
 #   WAIT           선택. 실행 후 촬영까지 대기 초 (기본 5)
 #   OUT            선택. 출력 폴더 (기본 screenshots)
 #   BUNDLE_ID      선택. 비우면 Info.plist에서 읽는다.
+#   TITLE          선택. 갤러리(index.html) 제목 (기본 "<실행파일명> 찰칵")
 #   FAIL_ON_CRASH  선택. 촬영 시점에 앱이 죽어 있으면 마지막에 실패 종료 (기본 true)
 #   SHUTDOWN       선택. 끝나고 시뮬레이터 종료 (기본 false. 로컬 디버깅 편의)
 set -euo pipefail
@@ -119,6 +120,8 @@ mkdir -p "$OUT"
 STAMP="$OUT/.started"
 touch "$STAMP"
 SUMMARY="$OUT/summary.md"
+SHOTS_TSV="$OUT/shots.tsv"   # 갤러리(index.html) 입력. name, mode, file, status
+: > "$SHOTS_TSV"
 {
   echo "# 찰칵 결과"
   echo
@@ -173,6 +176,7 @@ for mode in "${MODES[@]}"; do
     fi
     log "$name ($mode) -> $file [$status]"
     echo "| $name | $mode | \`$(basename "$file")\` | $status |" >> "$SUMMARY"
+    printf '%s\t%s\t%s\t%s\n' "$name" "$mode" "$(basename "$file")" "$status" >> "$SHOTS_TSV"
   done <<EOF
 $SCREENS
 EOF
@@ -191,6 +195,10 @@ if [ "$crashed" -gt 0 ]; then
   } >> "$SUMMARY"
 fi
 rm -f "$STAMP"
+
+# 갤러리: 브라우저에서 바로 보는 index.html (이미지는 상대 경로. zip을 풀거나 정적 호스팅에 올리면 열린다)
+python3 "$(dirname "$0")/gallery.py" "$OUT" "${TITLE:-$EXEC_NAME 찰칵}" "$BUNDLE_ID" "$DEV_NAME · ${RT_NAME//-/ }"
+log "갤러리 $OUT/index.html"
 
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
   cat "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
